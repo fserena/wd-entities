@@ -41,7 +41,7 @@ setup(
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
     install_requires=['flask', 'Flask-Cache', 'requests', 'urllib3'],
     classifiers=[],
-    package_dir={'geo_pass': 'geo_pass'},
-    package_data={'geo_pass': ['metadata.json']},
-    scripts=['geo-pass']
+    package_dir={'wd_entities': 'wd_entities'},
+    package_data={'wd_entities': ['metadata.json']},
+    scripts=['geo-wd_entities']
 )
