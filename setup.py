@@ -43,5 +43,5 @@ setup(
     classifiers=[],
     package_dir={'wd_entities': 'wd_entities'},
     package_data={'wd_entities': ['metadata.json']},
-    scripts=['wd_entities']
+    scripts=['wd-entities']
 )
