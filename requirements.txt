@@ -1,5 +1,6 @@
 Flask
 Flask-Cache
-gevent
+gunicorn
+futures
 requests
 urllib3
