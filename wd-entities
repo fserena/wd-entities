@@ -61,7 +61,9 @@ if __name__ == '__main__':
             'workers': 1,
             'threads': number_of_workers() / 2,
             'workerconnections': 1000,
-            'workerclass': 'gthread'
+            'workerclass': 'gthread',
+            'errorlog': '-',
+            'accesslog': '-'
         }
         StandaloneApplication(options).run()
     except (KeyboardInterrupt, SystemExit, SystemError):

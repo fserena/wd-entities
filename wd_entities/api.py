@@ -394,43 +394,44 @@ def get_field_values(field):
 def get_wd_entity(entity_id, pr_filter=()):
     # response = requests.get('http://www.wikidata.org/entity/' + entity_id)
     response = requests.get('https://www.wikidata.org/wiki/Special:EntityData/{}.json'.format(entity_id))
-
-    data = response.json()
     d = {'entity': entity_id}
 
-    entity = data['entities'][entity_id]
-    claims = entity['claims']
-    if entity['descriptions']:
-        description = entity.get('descriptions', {}).get('en', {}).get('value', '')
-        d['description'] = description
-    d['aliases'] = list(get_field_values(entity['aliases']))
-    d['labels'] = list(get_field_values(entity['labels']))
-    for pr_id in filter(lambda x: x in pr_filter, claims):
-        # print 'processing property {}...'.format(pr_id)
-        learn_prop(pr_id)
-        for claim in claims[pr_id]:
-            value = claim.get('mainsnak', {}).get('datavalue', {}).get('value', None)
-            if value is None:
-                continue
-            if pr_id == 'P18':
-                value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
-            elif pr_id == 'P373':
-                value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
-            if isinstance(value, dict):
-                if value.get('entity-type') == 'item':
-                    value = value.get('id')
-                    if pr_id in wd_non_object_props:
-                        value = get_wd_entity_label(value)
+    if response.status_code == 200:
+        data = response.json()
+
+        entity = data['entities'][entity_id]
+        claims = entity['claims']
+        if entity['descriptions']:
+            description = entity.get('descriptions', {}).get('en', {}).get('value', '')
+            d['description'] = description
+        d['aliases'] = list(get_field_values(entity['aliases']))
+        d['labels'] = list(get_field_values(entity['labels']))
+        for pr_id in filter(lambda x: x in pr_filter, claims):
+            # print 'processing property {}...'.format(pr_id)
+            learn_prop(pr_id)
+            for claim in claims[pr_id]:
+                value = claim.get('mainsnak', {}).get('datavalue', {}).get('value', None)
+                if value is None:
+                    continue
+                if pr_id == 'P18':
+                    value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
+                elif pr_id == 'P373':
+                    value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
+                if isinstance(value, dict):
+                    if value.get('entity-type') == 'item':
+                        value = value.get('id')
+                        if pr_id in wd_non_object_props:
+                            value = get_wd_entity_label(value)
+                    else:
+                        value = value.get('text', value)
+                if pr_id in d:
+                    if not isinstance(d[pr_id], list):
+                        d[pr_id] = [d[pr_id]]
+                    d[pr_id].append(value)
                 else:
-                    value = value.get('text', value)
-            if pr_id in d:
-                if not isinstance(d[pr_id], list):
-                    d[pr_id] = [d[pr_id]]
-                d[pr_id].append(value)
-            else:
-                d[pr_id] = value
-        if isinstance(d.get(pr_id, None), set):
-            d[pr_id] = list(d[pr_id])
+                    d[pr_id] = value
+            if isinstance(d.get(pr_id, None), set):
+                d[pr_id] = list(d[pr_id])
 
     resp = HTTPResponse(
         status=response.status_code,
