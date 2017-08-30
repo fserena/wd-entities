@@ -351,7 +351,7 @@ def learn_prop(pr_id):
     if pr_id not in wd_non_object_props and pr_id not in wd_object_props:
         # print 'learning {}...'.format(pr_id)
 
-        wurl = 'http://www.wikidata.org/entity/{}'.format(pr_id)
+        wurl = 'https://www.wikidata.org/wiki/Special:EntityData/{}.json'.format(pr_id)
         response = requests.get(wurl)
         entity = response.json()
         prop = entity['entities'][pr_id]
@@ -373,7 +373,7 @@ def learn_prop(pr_id):
 
 def get_wd_entity_label(entity_id):
     if entity_id not in entity_labels:
-        response = requests.get('http://www.wikidata.org/entity/' + entity_id)
+        response = requests.get('https://www.wikidata.org/wiki/Special:EntityData/{}.json'.format(entity_id))
         entity = response.json()
         entity_labels[entity_id] = entity['entities'][entity_id]['labels']['en']['value']
     return entity_labels[entity_id]
@@ -392,7 +392,9 @@ def get_field_values(field):
 
 
 def get_wd_entity(entity_id, pr_filter=()):
-    response = requests.get('http://www.wikidata.org/entity/' + entity_id)
+    # response = requests.get('http://www.wikidata.org/entity/' + entity_id)
+    response = requests.get('https://www.wikidata.org/wiki/Special:EntityData/{}.json'.format(entity_id))
+
     data = response.json()
     d = {'entity': entity_id}
 
