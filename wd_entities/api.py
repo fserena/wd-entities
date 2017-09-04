@@ -177,12 +177,12 @@ def get_entity(qid):
 @app.route('/properties/<pid>')
 @cache.cached(timeout=3600, key_prefix=make_cache_key)
 def get_property(pid):
-    if pid in found_obj_props:
+    if pid in wd_object_props:
         obj = True
-        desc = found_obj_props.get(pid)
-    elif pid in found_non_object_props:
+        desc = wd_object_props.get(pid)
+    elif pid in wd_non_object_props:
         obj = False
-        desc = found_non_object_props.get(pid)
+        desc = wd_non_object_props.get(pid)
     else:
         response = jsonify({'message': 'not found'})
         response.status_code = 404
