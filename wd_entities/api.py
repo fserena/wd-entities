@@ -30,6 +30,8 @@ from requests import Response
 from urllib3 import HTTPResponse
 from requests.structures import CaseInsensitiveDict
 from requests.utils import get_encoding_from_headers
+from SPARQLWrapper import JSON
+from SPARQLWrapper import SPARQLWrapper
 
 __author__ = 'Fernando Serena'
 
@@ -46,6 +48,37 @@ except:
     wd_non_object_props = {}
 
 entity_labels = {}
+
+
+def query_ingoing(entity_id):
+    sparql = SPARQLWrapper("https://query.wikidata.org/sparql")
+    sparql.setReturnFormat(JSON)
+
+    sparql.setQuery("""           
+           SELECT ?inv ?inp WHERE {
+               ?inv ?inp wd:%s .
+           }
+       """ % entity_id)
+
+    ingoing = {}
+    try:
+        results = sparql.query().convert()
+
+        direct_ns = 'http://www.wikidata.org/prop/direct/'
+
+        for result in results["results"]["bindings"]:
+            inp = result["inp"]["value"]
+            if direct_ns in inp:
+                inp = inp.replace(direct_ns, '')
+                learn_prop(inp)
+                inv = result["inv"]["value"].replace('http://www.wikidata.org/entity/', '')
+                if inp not in ingoing:
+                    ingoing[inp] = []
+                ingoing[inp].append(inv)
+    except Exception:
+        pass
+
+    return ingoing
 
 
 def learn_prop(pr_id):
@@ -97,7 +130,24 @@ def get_field_values(field):
                 yield langvalue.get('value', '')
 
 
-def get_wd_entity(entity_id, pr_filter=()):
+def get_value(pr_id, item):
+    value = item.get('datavalue', {}).get('value', None)
+    if value is not None:
+        if pr_id == 'P18':
+            value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
+        elif pr_id == 'P373':
+            value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
+        if isinstance(value, dict):
+            if value.get('entity-type') == 'item':
+                value = value.get('id')
+                if pr_id in wd_non_object_props:
+                    value = get_wd_entity_label(value)
+            else:
+                value = value.get('text', value)
+    return value
+
+
+def get_wd_entity(entity_id, ingoing=False):
     # response = requests.get('http://www.wikidata.org/entity/' + entity_id)
     response = requests.get('https://www.wikidata.org/wiki/Special:EntityData/{}.json'.format(entity_id))
     d = {'entity': entity_id}
@@ -116,20 +166,15 @@ def get_wd_entity(entity_id, pr_filter=()):
             # print 'processing property {}...'.format(pr_id)
             learn_prop(pr_id)
             for claim in claims[pr_id]:
-                value = claim.get('mainsnak', {}).get('datavalue', {}).get('value', None)
-                if value is None:
-                    continue
-                if pr_id == 'P18':
-                    value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
-                elif pr_id == 'P373':
-                    value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
-                if isinstance(value, dict):
-                    if value.get('entity-type') == 'item':
-                        value = value.get('id')
-                        if pr_id in wd_non_object_props:
-                            value = get_wd_entity_label(value)
-                    else:
-                        value = value.get('text', value)
+                value = get_value(pr_id, claim.get('mainsnak', {}))
+                if 'qualifiers' in claim:
+                    final_value = {'value': value}
+                    for q_pr_id in claim['qualifiers']:
+                        learn_prop(q_pr_id)
+                        q_item = claim['qualifiers'].get(q_pr_id).pop()
+                        q_value = get_value(q_pr_id, q_item)
+                        final_value[q_pr_id] = q_value
+                    value = final_value
                 if pr_id in d:
                     if not isinstance(d[pr_id], list):
                         d[pr_id] = [d[pr_id]]
@@ -138,6 +183,10 @@ def get_wd_entity(entity_id, pr_filter=()):
                     d[pr_id] = value
             if isinstance(d.get(pr_id, None), set):
                 d[pr_id] = list(d[pr_id])
+
+        if ingoing:
+            ingoing = query_ingoing(entity_id)
+            d['ingoing'] = ingoing
 
     resp = HTTPResponse(
         status=response.status_code,
@@ -170,7 +219,9 @@ def make_cache_key(*args, **kwargs):
 @app.route('/entities/<qid>')
 @cache.cached(timeout=3600, key_prefix=make_cache_key)
 def get_entity(qid):
-    response = get_wd_entity(qid, pr_filter=mapped_properties)
+    ingoing = request.args.get('in', None)
+    ingoing = ingoing is not None
+    response = get_wd_entity(qid, ingoing=ingoing)
     return jsonify(response.json())
 
 

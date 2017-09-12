@@ -4,3 +4,4 @@ gunicorn
 futures
 requests
 urllib3
+SPARQLWrapper

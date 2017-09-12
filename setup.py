@@ -39,7 +39,7 @@ setup(
     url=metadata['github'],
     download_url="https://github.com/fserena/wd-entities/tarball/{}".format(metadata['version']),
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['flask', 'Flask-Cache', 'requests', 'urllib3', 'gunicorn', 'futures'],
+    install_requires=['flask', 'Flask-Cache', 'requests', 'urllib3', 'gunicorn', 'futures', 'SPARQLWrapper'],
     classifiers=[],
     package_dir={'wd_entities': 'wd_entities'},
     package_data={'wd_entities': ['metadata.json']},
