@@ -136,7 +136,7 @@ def get_field_values(field):
 def get_value(pr_id, item):
     value = item.get('datavalue', {}).get('value', None)
     if value is not None:
-        if pr_id == 'P18':
+        if 'png' in value or 'svg' in value or 'jpg' in value:
             value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
         elif pr_id == 'P373':
             value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
@@ -185,6 +185,7 @@ def get_wd_entity(entity_id, ingoing=False):
             d['description'] = description
         d['aliases'] = list(get_field_values(entity['aliases']))
         d['labels'] = list(get_field_values(entity['labels']))
+        date_q_ids = set()
         for pr_id in claims:  # filter(lambda x: x in pr_filter, claims):
             # print 'processing property {}...'.format(pr_id)
             learn_prop(pr_id)
@@ -212,7 +213,6 @@ def get_wd_entity(entity_id, ingoing=False):
 
             max_dt = None
             max_dt_value = None
-            date_q_ids = set()
             for dv in list(filter(lambda x: isinstance(x, dict), d[pr_id])):
                 try:
                     q_id = filter(lambda q: isinstance(dv[q], datetime), dv.keys()).pop()
@@ -223,7 +223,8 @@ def get_wd_entity(entity_id, ingoing=False):
                 except IndexError:
                     pass
             if max_dt_value:
-                d[pr_id] = filter(lambda x: not set(x.keys()).intersection(date_q_ids), d[pr_id])
+                d[pr_id] = filter(lambda x: not isinstance(x, dict) or not set(x.keys()).intersection(date_q_ids),
+                                  d[pr_id])
                 d[pr_id].append(max_dt_value)
 
             if len(d[pr_id]) == 1:
