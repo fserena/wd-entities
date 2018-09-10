@@ -136,10 +136,12 @@ def get_field_values(field):
 def get_value(pr_id, item):
     value = item.get('datavalue', {}).get('value', None)
     if value is not None:
-        if 'png' in value or 'svg' in value or 'jpg' in value:
-            value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
-        elif pr_id == 'P373':
-            value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
+        if isinstance(value, basestring):
+            low_value = value.lower()
+            if 'png' in low_value or 'svg' in low_value or 'jpg' in low_value:
+                value = u'https://commons.wikimedia.org/wiki/File:{}'.format(value)
+            elif pr_id == 'P373':
+                value = u'https://commons.wikimedia.org/wiki/Category:{}'.format(value)
         if isinstance(value, dict):
             if value.get('entity-type') == 'item':
                 value = value.get('id')
