@@ -1,7 +1,9 @@
 Flask
-Flask-Cache
+Flask-Caching
 gunicorn
 futures
 requests
 urllib3
 SPARQLWrapper
+redis
+hiredis
